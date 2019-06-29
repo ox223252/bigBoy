@@ -1,0 +1,36 @@
+[submodule "Configure"]
+	path = Configure
+	url = ox.github.com:ox223252/Configure
+[submodule "src/lib/config"]
+	path = src/lib/config
+	url = https://github.com/ox223252/config.git
+[submodule "src/lib/freeOnExit"]
+	path = src/lib/freeOnExit
+	url = https://github.com/ox223252/freeOnExit.git
+[submodule "src/lib/holonomic"]
+	path = src/lib/holonomic
+	url = https://github.com/ox223252/holonomic.git
+[submodule "src/lib/log"]
+	path = src/lib/log
+	url = https://github.com/ox223252/log.git
+[submodule "src/lib/mcp23017"]
+	path = src/lib/mcp23017
+	url = https://github.com/ox223252/mcp23017.git
+[submodule "src/lib/pca9685"]
+	path = src/lib/pca9685
+	url = https://github.com/ox223252/pca9685.git
+[submodule "src/lib/signalHandler"]
+	path = src/lib/signalHandler
+	url = https://github.com/ox223252/signalHandler.git
+[submodule "src/lib/tcpIp"]
+	path = src/lib/tcpIp
+	url = https://github.com/ox223252/tcpIp.git
+[submodule "src/lib/termRequest"]
+	path = src/lib/termRequest
+	url = https://github.com/ox223252/termRequest.git
+[submodule "src/lib/timer"]
+	path = src/lib/timer
+	url = https://github.com/ox223252/timer.git
+[submodule "src/lib/Xbox360-wireless"]
+	path = src/lib/Xbox360-wireless
+	url = https://github.com/ox223252/Xbox360-wireless.git
