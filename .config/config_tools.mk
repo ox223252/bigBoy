@@ -1,5 +1,5 @@
 # flags for alls targets
-FLAGS= -D'BY_LINUX_MAKEFILE'
+FLAGS= -D'BY_LINUX_MAKEFILE' -D'PCA_WITH_THREAD' -D'MCP_WITH_THREAD' -D'FOE_WITH_THREAD'
 
 # tools / flags / libs only for native target
 CC=gcc

@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include "./lib/config/config_arg.h"
 #include "./lib/config/config_file.h"
+#include <pthread.h>
+#include "./lib/holonomic/holonomic.h"
 
 // INIT_FUNCTION
 void functionExit ( void * arg )
@@ -30,6 +32,7 @@ int main ( int argc, char ** argv )
 	uint16_t serverPort = 6666;
 	int serverFd = 0;
 	int clientFd = 0;
+
 	signalHandling signal =
 	{
 		.flag =
@@ -55,11 +58,8 @@ int main ( int argc, char ** argv )
 		}
 	};
  
-	int pca9685_fd = 0;
-	int mcp23017_fd = 0;
 	struct
 	{
-		#ifdef __LOG_H__
 		uint8_t help:1,
 			quiet:1,
 			verbose:1,
@@ -71,25 +71,20 @@ int main ( int argc, char ** argv )
 			#endif
 			term:1,
 			file:1;
-		#else
-		uint8_t help:1,
-			unused:6; // to have same allignement with and without debug/color/quiet flags
-		#endif
 	}
-	flags;
-	#ifdef __LOG_H__
-		char logFileName[ 512 ] = "";
-	#endif
-	
-	#ifdef __PCA9685_H__
-		int pca9685_addr = 0x40;
-		char pca9685_i2c[ 512 ] = "";
-	#endif
-	
-	#ifdef __MCP23017_H__
-		int mcp23017_addr = 0x40;
-		char mcp23017_i2c[ 512 ] = "";
-	#endif
+	flags = { 0 };
+
+	char logFileName[ 512 ] = "";
+
+	pthread_mutex_t i2cMutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+
+	int pca9685_fd = 0;
+	int pca9685_addr = 0x40;
+	char pca9685_i2c[ 512 ] = "";
+
+	int mcp23017_fd = 0;
+	int mcp23017_addr = 0x40;
+	char mcp23017_i2c[ 512 ] = "";
  
 	config_el config[] =
 	{
@@ -152,90 +147,91 @@ int main ( int argc, char ** argv )
 	if ( readConfigFile ( "config", config ) )
 	{ // failure case
 	}
-	else if ( readConfigArgs ( argc, argv, config ) )
+	
+	if ( readConfigArgs ( argc, argv, config ) )
 	{ // failure case
 	}
-	else if ( readParamArgs ( argc, argv, param ) )
+	
+	if ( readParamArgs ( argc, argv, param ) )
 	{ // failure case
 	}
 	else if ( flags.help )
 	{// configFile read successfully
+		printf ( "%s is a program to drive na honomic robot based on mecanum well\n", argv[ 0 ] );
+		printf ( "Build date: %s\n", DATE_BUILD );
+		printf ( "Author: ox223252\n" );
+		printf ( "License: GPLv2\n" );
 		helpParamArgs ( param );
 		helpConfigArgs ( config );
+		return ( 0 );
 	}
 	// END_CONFIG
-	if ( clientFd = clientInit ( serverAddr, serverPort ), clientFd > 0 )
-	{ // client create
-		printf ( "connected to server\n" );
-	}
-	else if ( serverFd = serverInit ( serverPort ), serverFd <= 0 )
-	{ // failure case
-	}
-	else if ( clientFd = serverListen ( serverFd ), clientFd > 0 )
-	{ // client connected
-		printf ( "client connected\n" );
-	}
-	else
-	{ // failure case
-	}
+
+	// if ( clientFd = clientInit ( serverAddr, serverPort ), clientFd > 0 )
+	// { // client create
+	// 	printf ( "connected to server\n" );
+	// }
+	// else if ( serverFd = serverInit ( serverPort ), serverFd <= 0 )
+	// { // failure case
+	// }
+	// else if ( clientFd = serverListen ( serverFd ), clientFd > 0 )
+	// { // client connected
+	// 	printf ( "client connected\n" );
+	// }
+	// else
+	// { // failure case
+	// }
  
-	// INIT_PCA9685
-	#ifdef __CONFIG_ARG_H__
-		if ( openPCA9685 ( pca9685_i2c, pca9685_addr, &pca9685_fd ) )
-	#else
-		if ( openPCA9685 ( "/dev/i2c-1", 0x40, &pca9685_fd ) )
-	#endif
-	{ // failure case
-	}
+	// // INIT_PCA9685
+	// if ( openPCA9685 ( pca9685_i2c, pca9685_addr, &pca9685_fd ) )
+	// { // failure case
+	// }
+	// else if ( setCloseOnExit ( pca9685_fd ) )
+	// { // failure case
+
+	// }
+	// setPCA9685BusMutex ( &i2cMutex );
+
+	// // END_PCA9685
  
-	#ifdef __FREEONEXIT_H__
-		if ( setCloseOnExit ( pca9685_fd ) )
-		{ // failure case
- 
-		}
-	#endif
-	// END_PCA9685
- 
-	// INIT_MCP23017
-	#ifdef __CONFIG_ARG_H__
-		if ( openMCP23017 ( mcp23017_i2c, mcp23017_addr, &mcp23017_fd ) )
-	#else
-		if ( openMCP23017 ( "/dev/i2c-1", 0x20, &mcp23017_fd ) )
-	#endif
-	{ // failure case
-	}
-	
-	#ifdef __FREEONEXIT_H__
-		if ( setCloseOnExit ( mcp23017_fd ) )
-		{ // failure case
- 
-		}
-	#endif
-	// END_MCP23017
+	// // INIT_MCP23017
+	// if ( openMCP23017 ( mcp23017_i2c, mcp23017_addr, &mcp23017_fd ) )
+	// { // failure case
+	// }
+	// else if ( setCloseOnExit ( mcp23017_fd ) )
+	// { // failure case
+
+	// }
+	// setMCP23017BusMutex( &i2cMutex );
+	// // END_MCP23017
  
 	// INIT_LOG
-	#ifdef __CONFIG_DATA_H__
-		logSetVerbose ( flags.verbose );
-		#ifndef RELEASE_MODE
-			logSetDebug ( flags.debug );
-			logSetColor ( flags.color );
-		#endif
-		logSetQuiet ( flags.quiet );
-		logSetOutput ( flags.term | !flags.file, flags.file );
-		logSetFileName ( logFileName );
-	#else
-		logSetVerbose ( 1 );
-		#ifndef RELEASE_MODE
-			logSetDebug ( 1 );
-			logSetColor ( 1 );
-		#endif
-		logSetQuiet ( 0 );
-		logSetOutput ( 1, 1 );
-		logSetFileName ( "log.txt" );
+	logSetVerbose ( flags.verbose );
+	#ifndef RELEASE_MODE
+		logSetDebug ( flags.debug );
+		logSetColor ( flags.color );
 	#endif
+	logSetQuiet ( flags.quiet );
+	logSetOutput ( flags.term | !flags.file, flags.file );
+	logSetFileName ( logFileName );
 	// END_LOG
 	
-	
+	robot_t robot;
+	if ( holonomicInit ( &robot, true, &i2cMutex, pca9685_fd  ) )
+	{ // failure case
+	}
+	else
+	{
+		setThreadCancelOnExit ( robot.thread );
+		setThreadJoinOnExit ( robot.thread );
+
+		holonomicSetDelay ( &robot, 100000 );
+	}
+
+	holonomicSet ( &robot, FRONT | LEFT, 100, true );
+
+	holonomicWait ( &robot );
+
 	// END_CORE
 	// END_PROGRAM
 	if ( clientFd > 0 )
@@ -246,16 +242,20 @@ int main ( int argc, char ** argv )
 	{
 		close ( serverFd );
 	}
+
+	unsetThreadCancelOnExit ( robot.thread );
+	unsetThreadJoinOnExit ( robot.thread );
+
+	pthread_cancel ( robot.thread );
+	pthread_join ( robot.thread, NULL );
+
 	// RELEASE_PCA9685
-	#ifdef __FREEONEXIT_H__
-		unsetCloseOnExit ( pca9685_fd );
-	#endif
+	unsetCloseOnExit ( pca9685_fd );
 	closePCA9685 ( pca9685_fd );
 	// RELEASE_MCP23017
-	#ifdef __FREEONEXIT_H__
-		unsetCloseOnExit ( mcp23017_fd );
-	#endif
+	unsetCloseOnExit ( mcp23017_fd );
 	closeMCP23017 ( mcp23017_fd );
+
 	return ( 0 );
 }
 
