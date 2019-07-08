@@ -14,6 +14,8 @@
 #include "./lib/config/config_file.h"
 #include <pthread.h>
 #include "./lib/holonomic/holonomic.h"
+#include <errno.h>
+#include <string.h>
 
 // INIT_FUNCTION
 void functionExit ( void * arg )
@@ -32,6 +34,8 @@ int main ( int argc, char ** argv )
 	uint16_t serverPort = 6666;
 	int serverFd = 0;
 	int clientFd = 0;
+
+	char *picture = NULL;
 
 	signalHandling signal =
 	{
@@ -129,6 +133,7 @@ int main ( int argc, char ** argv )
 			{ "--tcp_port", "-tp", 1, cT ( uint16_t ), &serverPort, "tcp server port" },
 			{ "--tcp_addr", "-tA", 1, cT ( str ), serverAddr, "tcp server ip address or server name" },
 		#endif
+		{ "--picture", "-p", 1, cT ( ptrStr ), &picture, "picture need to be draw (only bmp)" },
 		{ NULL }
 	};
  
@@ -190,7 +195,10 @@ int main ( int argc, char ** argv )
 	// { // failure case
 
 	// }
-	// setPCA9685BusMutex ( &i2cMutex );
+	// else
+	// {
+	// 	setPCA9685BusMutex ( &i2cMutex );
+	// }
 
 	// // END_PCA9685
  
@@ -202,7 +210,10 @@ int main ( int argc, char ** argv )
 	// { // failure case
 
 	// }
-	// setMCP23017BusMutex( &i2cMutex );
+	// else
+	// {
+	// 	setMCP23017BusMutex( &i2cMutex );
+	// }
 	// // END_MCP23017
  
 	// INIT_LOG
@@ -219,6 +230,7 @@ int main ( int argc, char ** argv )
 	robot_t robot;
 	if ( holonomicInit ( &robot, true, &i2cMutex, pca9685_fd  ) )
 	{ // failure case
+		return ( 0 );
 	}
 	else
 	{
@@ -228,9 +240,20 @@ int main ( int argc, char ** argv )
 		holonomicSetDelay ( &robot, 100000 );
 	}
 
-	holonomicSet ( &robot, FRONT | LEFT, 100, true );
+	if ( picture )
+	{
+		printf ( "try to draw \n" );
+		if ( drawBmp ( &robot, picture ) )
+		{
+			printf ( "error %s\n", strerror ( errno ) );
+		}
+	}
+	else
+	{
+		holonomicSet ( &robot, FRONT | LEFT, 100, true );
 
-	holonomicWait ( &robot );
+		holonomicWait ( &robot );
+	}
 
 	// END_CORE
 	// END_PROGRAM
