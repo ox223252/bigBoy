@@ -6,7 +6,7 @@ Software created to drive le smallest robot that I build for the national Roboti
 
 ## Hardware:
 
-BigBoy is based on Mecanum wheel and powered by Raspberry Pi
+BigBoy is based on Mecanum wheel and powered by Raspberry Pi. Somes pieces are available in this repos in res/meca
 
 ## Features:
 
