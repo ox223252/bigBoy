@@ -34,6 +34,23 @@
 
 static bool ackDone = false;
 
+typedef struct
+{
+	void (*on_message)();
+	void * arg;
+}
+_bigBoy_init_t;
+
+typedef struct
+{
+	struct mosquitto *mosq;
+	const char *topic;
+	void *arg;
+	uint8_t *stop;
+	char* (*callback)( void * arg );
+	uint32_t time;
+}
+_bigBoy_sender_t;
 
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static void disconnectCallback ( struct mosquitto * restrict mosq, void * restrict obj, int result )
@@ -43,9 +60,6 @@ static void disconnectCallback ( struct mosquitto * restrict mosq, void * restri
 		ackDone = false;
 	}
 }
-// static void publishCallback ( struct mosquitto * restrict mosq, void * restrict obj, int result )
-// {
-// }
 static void connectCallback ( struct mosquitto * restrict mosq, void * restrict obj, int result )
 {
 	if ( !result )
@@ -53,9 +67,21 @@ static void connectCallback ( struct mosquitto * restrict mosq, void * restrict 
 		ackDone = true;
 	}
 }
+static void messageCallback ( struct mosquitto * restrict mosq, void * arg, const struct mosquitto_message * m)
+{
+	_bigBoy_init_t *s = arg;
+
+	if ( !s )
+	{
+		return;
+	}
+	s->on_message ( m->topic, m-> payload, s->arg );
+}
 #pragma GCC diagnostic pop
 
-int bigBoyMQTT_init ( const MQTT_init_t s, struct mosquitto ** mosq )
+
+
+int bigBoyMQTT_init ( const MQTT_init_t s, struct mosquitto ** mosq, void (*fnc)(char*,char*), void * arg )
 {
 	int rt = 0;
 
@@ -69,13 +95,27 @@ int bigBoyMQTT_init ( const MQTT_init_t s, struct mosquitto ** mosq )
 		return ( __LINE__ );
 	}
 
+	_bigBoy_init_t *init = NULL;
+	if ( fnc )
+	{
+		init = malloc ( sizeof ( *init ) );
+		if ( !init )
+		{
+			rt = __LINE__;
+			goto lClean;
+		}
+		setFreeOnExit ( init );
+		init->on_message = fnc;
+		init->arg = arg;
+	}
+
 	if ( s.name )
 	{
-		*mosq = mosquitto_new ( s.name, true, NULL );
+		*mosq = mosquitto_new ( s.name, true, init );
 	}
 	else
 	{
-		*mosq = mosquitto_new ( "bigBoy", true, NULL );
+		*mosq = mosquitto_new ( "bigBoy", true, init );
 	}
 
 	if ( !*mosq )
@@ -87,7 +127,7 @@ int bigBoyMQTT_init ( const MQTT_init_t s, struct mosquitto ** mosq )
 
 	mosquitto_connect_callback_set ( *mosq, connectCallback );
 	mosquitto_disconnect_callback_set ( *mosq, disconnectCallback );
-	// mosquitto_publish_callback_set ( *mosq, publishCallback );
+	mosquitto_message_callback_set( *mosq, messageCallback );
 
 	// set the msg provided to broker in failure case
 	if ( s.lastName && 
@@ -115,20 +155,6 @@ int bigBoyMQTT_init ( const MQTT_init_t s, struct mosquitto ** mosq )
 		rt = __LINE__;
 		goto lDestroy;
 	}
-
-	// while ( ackDone == false )
-	// {
-	// 	int value = mosquitto_loop ( *mosq, -1, 1 );
-	// 	if ( value )
-	// 	{
-	// 		printf ( "%d : %s\n", __LINE__, mosquitto_strerror ( value ) );
-	// 		return ( __LINE__ );
-	// 	}
-	// 	else
-	// 	{
-	// 		usleep ( 50000 );
-	// 	}
-	// }
 
 	if ( mosquitto_loop_start ( *mosq ) )
 	{
@@ -162,19 +188,9 @@ int bigBoyMQTT_stop ( struct mosquitto ** mosq )
 	return ( 0 );
 }
 
-typedef struct
-{
-	struct mosquitto *mosq;
-	const char *topic;
-	void *arg;
-	char* (*callback)( void * arg );
-	uint32_t time;
-}
-sender_t;
-
 static void * bigBoyMQTT_senderSubRoutine ( void * arg )
 {
-	sender_t *s = arg;
+	_bigBoy_sender_t *s = arg;
 	while ( !*s->stop )
 	{
 		if ( ackDone )
@@ -193,11 +209,11 @@ static void * bigBoyMQTT_senderSubRoutine ( void * arg )
 	return ( NULL );
 }
 
-int bigBoyMQTT_sender ( struct mosquitto * mosq, const char* topic, void * stop, void * data, char *callback( void* arg ), uint32_t time )
+int bigBoyMQTT_sender ( struct mosquitto * mosq, const char* topic, uint8_t * stop, void * data, char *callback( void* arg ), uint32_t time )
 {
-	sender_t *s = NULL;
+	_bigBoy_sender_t *s = NULL;
 
-	s = malloc ( sizeof (sender_t) );
+	s = malloc ( sizeof (_bigBoy_sender_t) );
 	if ( !s )
 	{
 		return ( __LINE__ );
@@ -225,3 +241,4 @@ int bigBoyMQTT_sender ( struct mosquitto * mosq, const char* topic, void * stop,
 	}
 	return ( 0 );
 }
+
