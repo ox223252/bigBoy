@@ -19,9 +19,8 @@
 
 #include "draw.h"
 #include "bigBoyServer.h"
+#include "callback.h"
 
-char * printTimer ( void * arg );
-void  onMessage ( char *topic, char * msg, void * data );
 
 // INIT_FUNCTION
 void functionExit ( void * arg )
@@ -92,21 +91,27 @@ int main ( int argc, char ** argv )
 	int mcp23017_fd = 0;
 	int mcp23017_addr = 0x40;
 	char mcp23017_i2c[ 512 ] = "";
+
+	MQTT_init_t mqttInitStruct = {
+		.host="127.0.0.1",
+		.port=1883
+	};
  
 	config_el config[] =
 	{
-		#ifdef __PCA9685_H__
-			{ "PCA9685_ADDR", cT ( int32_t ), &pca9685_addr, "pca9685 address"},
-			{ "PCA9685_I2C", cT ( str ), pca9685_i2c, "pca9685 i2c bus name"},
-		#endif
-		#ifdef __MCP23017_H__
-			{ "MCP23017_ADDR", cT ( int32_t ), &mcp23017_addr, "mcp23017 address"},
-			{ "MCP23017_I2C", cT ( str ), mcp23017_i2c, "mcp23017 i2c bus name"},
-		#endif
-		#ifdef __TCPIP_H__
-			{ "TCP_PORT", cT ( uint16_t ), &serverPort, "tcp server port"},
-			{ "TCP_ADDR", cT ( str ), serverAddr, "tcp server ip address or server name"},
-		#endif
+		{ "PCA9685_ADDR", cT ( int32_t ), &pca9685_addr, "pca9685 address"},
+		{ "PCA9685_I2C", cT ( str ), pca9685_i2c, "pca9685 i2c bus name"},
+		{ "MCP23017_ADDR", cT ( int32_t ), &mcp23017_addr, "mcp23017 address"},
+		{ "MCP23017_I2C", cT ( str ), mcp23017_i2c, "mcp23017 i2c bus name"},
+		{ "TCP_PORT", cT ( uint16_t ), &serverPort, "tcp server port"},
+		{ "TCP_ADDR", cT ( str ), serverAddr, "tcp server ip address or server name"},
+		{ "MQTT_HOST", cT ( ptrStr ), mqttInitStruct.host, "MQTT broker ip addr" },
+		{ "MQTT_PORT", cT ( uint16_t ), &mqttInitStruct.port, "MQTT broker port" },
+		{ "MQTT_CA", cT ( ptrStr ), mqttInitStruct.ca, "MQTT broker SSL CA file" },
+		{ "MQTT_CERT", cT ( ptrStr ), mqttInitStruct.cert, "MQTT broker SSL CERT file" },
+		{ "MQTT_KEY", cT ( ptrStr ), mqttInitStruct.key, "MQTT broker SSL KEY file" },
+		{ "MQTT_LAST_TOPIC", cT ( ptrStr ), mqttInitStruct.lastName, "MQTT topic used to post last msg on deconnection" },
+		{ "MQTT_LAST_MSG", cT ( ptrStr ), mqttInitStruct.lastMsg, "MQTT msg sent on deconnection" },
 		{ NULL }
 	};
  
@@ -129,6 +134,13 @@ int main ( int argc, char ** argv )
 		{ "--tcp_port", "-tp", 1, cT ( uint16_t ), &serverPort, "tcp server port" },
 		{ "--tcp_addr", "-tA", 1, cT ( str ), serverAddr, "tcp server ip address or server name" },
 		{ "--picture", "-p", 1, cT ( ptrStr ), &picture, "picture need to be draw (only bmp)" },
+		{ "--mqqtt_host", "-mH", 1, cT ( ptrStr ), mqttInitStruct.host, "MQTT broker ip addr" },
+		{ "--mqtt_port", "-mP", 1, cT ( uint16_t ), &mqttInitStruct.port, "MQTT broker port" },
+		{ "--mqtt_ca", "-mA", 1, cT ( ptrStr ), mqttInitStruct.ca, "MQTT broker SSL CA file" },
+		{ "--mqtt_CERT", "-mC", 1, cT ( ptrStr ), mqttInitStruct.cert, "MQTT broker SSL CERT file" },
+		{ "--mqtt_KEY", "-mK", 1, cT ( ptrStr ), mqttInitStruct.key, "MQTT broker SSL KEY file" },
+		{ "--mqtt_topic", "-mT", 1, cT ( ptrStr ), mqttInitStruct.lastName, "MQTT topic used to post last msg on deconnection" },
+		{ "--mqtt_msg", "-mM", 1, cT ( ptrStr ), mqttInitStruct.lastMsg, "MQTT msg sent on deconnection" },
 		{ NULL }
 	};
  
@@ -234,7 +246,6 @@ int main ( int argc, char ** argv )
  	printf ( "%d\n", __LINE__ );
 	bigBoyMQTT_stop ( &mosq );
 
-	return ( 0 );
 
 	robot_t robot;
 	if ( holonomicInit ( &robot, true, &i2cMutex, pca9685_fd  ) )
@@ -287,17 +298,4 @@ int main ( int argc, char ** argv )
 	}
 
 	return ( 0 );
-}
-
-char * printTimer ( void * arg )
-{
-	static char str[32];
-	sprintf ( str, "test %d\r", (*((uint8_t*)arg))++ );
-	return ( str );
-}
-
-void  onMessage ( char *topic, char * msg, void * data )
-{
-	printf ( "topic : %s\n", topic );
-	printf ( "message : %s\n", msg );
 }

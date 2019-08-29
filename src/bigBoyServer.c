@@ -81,7 +81,7 @@ static void messageCallback ( struct mosquitto * restrict mosq, void * arg, cons
 
 
 
-int bigBoyMQTT_init ( const MQTT_init_t s, struct mosquitto ** mosq, void (*fnc)(char*,char*), void * arg )
+int bigBoyMQTT_init ( const MQTT_init_t s, struct mosquitto ** mosq, void (*fnc)(char*,char*,void*), void * arg )
 {
 	int rt = 0;
 
@@ -236,8 +236,9 @@ int bigBoyMQTT_sender ( struct mosquitto * mosq, const char* topic, uint8_t * st
 	}
 	else
 	{
-		setThreadKillOnExit ( thread );
-		setThreadJoinOnExit ( thread );
+		// setThreadKillOnExit ( thread );
+		// setThreadJoinOnExit ( thread );
+		setThreadCancelOnExit ( thread );
 	}
 	return ( 0 );
 }
