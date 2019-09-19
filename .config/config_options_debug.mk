@@ -1,4 +1,4 @@
 
-GDB=on
-GPROF=on
+GDB=off
+GPROF=off
 FULL_CPP=off

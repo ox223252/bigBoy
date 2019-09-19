@@ -104,7 +104,7 @@ int drawBmp ( robot_t *r, char* picture )
 		holonomicWait ( r );
 	}
 
-	holonomicSet ( robot, FREE, 0, true );
+	holonomicSet ( r, FREE, 0, true );
 
 
 	return ( 0 );

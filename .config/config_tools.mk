@@ -1,5 +1,6 @@
 # flags for alls targets
 FLAGS= -D'BY_LINUX_MAKEFILE' -D'PCA_WITH_THREAD' -D'MCP_WITH_THREAD' -D'FOE_WITH_THREAD'
+LDFLAGS=
 
 # tools / flags / libs only for native target
 CC=gcc
@@ -9,8 +10,8 @@ natif_LIBS=
 
 # tools / flags / libs only for arm linux target
 LABEL=arm-Linux
-arm-Linux_CROSS_CC=arm-linux-gnueabi-gcc
-arm-Linux_CROSS_CXX=arm-linux-gnueabi-g++
+arm-Linux_CROSS_CC=arm-linux-gnueabihf-gcc
+arm-Linux_CROSS_CXX=arm-linux-gnueabihf-g++
 arm-Linux_FLAGS=
 arm-Linux_LIBS=
 arm-Linux_EXEC_AFTER=

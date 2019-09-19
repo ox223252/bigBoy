@@ -34,3 +34,6 @@
 [submodule "src/lib/Xbox360-wireless"]
 	path = src/lib/Xbox360-wireless
 	url = https://github.com/ox223252/Xbox360-wireless.git
+[submodule "src/lib/mosquittoInterface"]
+	path = src/lib/mosquittoInterface
+	url = https://github.com/ox223252/mosquittoInterface.git
