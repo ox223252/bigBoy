@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "lib/mosquittoInterface/mosquittoInterface.h"
 
 char * printTimer ( void * arg )
 {
@@ -12,7 +13,15 @@ char * printTimer ( void * arg )
 
 void  onMessage ( char *topic, char * msg, void * data )
 {
-	if ( !strcmp( topic, "/petit/position"))
+	if ( !strcmp( topic, "/petit/position") )
+	{
+		
+	}
 	printf ( "topic : %s\n", topic );
 	printf ( "message : %s\n", msg );
+}
+
+void stopOnEnd ( void * arg )
+{
+	bigBoyMQTT_stop ( (struct mosquitto **)arg );
 }

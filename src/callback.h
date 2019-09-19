@@ -3,5 +3,6 @@
 
 char * printTimer ( void * arg );
 void  onMessage ( char *topic, char * msg, void * data );
+void stopOnEnd ( void * arg );
 
 #endif

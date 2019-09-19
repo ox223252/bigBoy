@@ -167,7 +167,8 @@ int main ( int argc, char ** argv )
 	if ( readParamArgs ( argc, argv, param ) )
 	{ // failure case
 	}
-	else if ( flags.help )
+	
+	if ( flags.help )
 	{// configFile read successfully
 		printf ( "%s is a program to drive na honomic robot based on mecanum well\n", argv[ 0 ] );
 		printf ( "Build date: %s\n", DATE_BUILD );
@@ -227,25 +228,23 @@ int main ( int argc, char ** argv )
 	struct mosquitto *mosq = NULL;
 	uint8_t timer = 0;
 	uint8_t stop = 0;
-	if ( bigBoyMQTT_init ( (MQTT_init_t){.host="127.0.0.1",.port=1883}, &mosq, onMessage, NULL ) )
+	if ( bigBoyMQTT_init ( mqttInitStruct, &mosq, onMessage, NULL ) )
 	{
 		logVerbose ( "error %s\n", strerror ( errno ) );
 		return ( __LINE__ );
 	}
-
-	mosquitto_subscribe ( mosq, NULL, "/timer", 0 );
-
-	bigBoyMQTT_sender ( mosq, "/timer", &stop, &timer, printTimer, 1000 );
+	else if ( setExecBeforeAllOnExit ( stopOnEnd, &mosq ) )
+	{
+		logVerbose ( "error %s\n", strerror ( errno ) );
+		bigBoyMQTT_stop ( &mosq );
+		return ( __LINE__ );
+	}
+	else
+	{
+		mosquitto_subscribe ( mosq, NULL, "/timer", 0 );
+		bigBoyMQTT_sender ( mosq, "/timer", &stop, &timer, printTimer, 1000 );
+	}
  
- 	printf ( "%d\n", __LINE__ );
-	sleep ( 5 );
- 	printf ( "%d\n", __LINE__ );
-	stop = 1;
- 	printf ( "%d\n", __LINE__ );
-	sleep ( 5 );
- 	printf ( "%d\n", __LINE__ );
-	bigBoyMQTT_stop ( &mosq );
-
 
 	robot_t robot;
 	if ( holonomicInit ( &robot, true, &i2cMutex, pca9685_fd  ) )
